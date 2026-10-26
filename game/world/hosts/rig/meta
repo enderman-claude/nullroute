@@ -1,0 +1,5 @@
+name=Ghost Rig
+ip=10.0.0.2
+unlock=1
+security=0
+links=crumbco-pos

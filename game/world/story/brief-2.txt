@@ -1,0 +1,11 @@
+CHAPTER 2: DEAD DROP
+
+The gateway (meridian-gw) is one hop from the bakery. It holds the
+routing export for the whole courier fleet.
+
+Hint: the clerk's notes mention the gateway admin. Read them.
+
+  scan                          (on crumbco-pos, to find meridian-gw)
+  crack meridian-gw admin
+  connect meridian-gw admin
+  download /srv/routes.cfg

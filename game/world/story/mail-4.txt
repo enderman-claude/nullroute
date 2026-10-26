@@ -1,0 +1,9 @@
+From: V <v@dropbox.invalid>
+Subject: The vote
+Ghost,
+
+The board vote that approved the reroute is recorded in the audit vault.
+It is linked from the fleet controller. Whoever signed that vote knows
+what happened to C-44. Pull the trail.
+
+- V

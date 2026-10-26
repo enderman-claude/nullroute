@@ -1,0 +1,9 @@
+From: V <v@dropbox.invalid>
+Subject: Start here
+Ghost,
+
+Crumb & Co. is a bakery chain. Their POS server syncs every night to a
+logistics gateway next door, Meridian Logistics. Start with the till
+data. Leave no trace.
+
+- V

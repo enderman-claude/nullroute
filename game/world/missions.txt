@@ -1,0 +1,5 @@
+1|Cold Start|loot|cashdrawer.log
+2|Dead Drop|loot|routes.cfg
+3|Ghost Route|loot|fleet_override.key
+4|Quorum|loot|audit_trail.log
+5|Null Route|loot|vell_manifest.txt

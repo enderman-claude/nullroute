@@ -1,0 +1,13 @@
+NULLROUTE
+
+2041. The city runs on delivery drones, smart ledgers and a few thousand
+systems nobody meant to connect. You are "ghost", a freelance operator
+working from a rig in a rented flat above a noodle bar in the old
+harbour district.
+
+Three nights ago a job landed in your dead drop. It was signed "V":
+
+  Real money. Start small: a bakery in the east end. Their point of
+  sale talks to something bigger. I need to know what.
+
+Type 'objectives' to read your brief, and 'help' for the command list.

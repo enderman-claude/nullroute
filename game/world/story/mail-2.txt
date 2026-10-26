@@ -1,0 +1,9 @@
+From: V <v@dropbox.invalid>
+Subject: The gateway
+Ghost,
+
+Clean. The sync goes to Meridian's gateway, which holds the routing
+export for their delivery fleet. I need that export. The clerk's notes
+will tell you where the gateway's admin is weak.
+
+- V

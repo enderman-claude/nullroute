@@ -1,0 +1,4 @@
+Rig notes
+- Keep the VPN up.
+- Never reuse a password you cracked for anything but the job.
+- Downloads land in ~/loot. Mail arrives in ~/mail.

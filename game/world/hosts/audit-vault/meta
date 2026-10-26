@@ -1,0 +1,7 @@
+name=Meridian audit vault
+ip=192.0.2.91
+unlock=4
+security=4
+links=vell-drop
+service=ssh:22:open
+service=http:80:open

@@ -1,0 +1,7 @@
+name=Meridian Logistics gateway
+ip=198.51.100.7
+unlock=2
+security=3
+links=fleet-ctl
+service=ssh:22:open
+service=ftp:21:closed

@@ -1,0 +1,4 @@
+The export is short and ugly. Zone 2 is the city hospital. Zone 7 is a
+low-priority residential block. There is a reroute from zone 2 to zone 7
+that only fires when a board vote passes. Someone is steering couriers
+on purpose, and the fleet controller is behind the gateway.

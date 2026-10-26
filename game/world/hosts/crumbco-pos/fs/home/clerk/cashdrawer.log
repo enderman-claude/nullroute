@@ -1,0 +1,5 @@
+2041-10-14 06:02 till=03 open    float=200.00
+2041-10-14 06:11 till=03 sale    amount=18.50
+2041-10-14 06:14 till=03 void    amount=412.00 ref=DRN-7731
+2041-10-14 06:14 till=03 void    amount=412.00 ref=DRN-7731
+2041-10-14 06:15 till=03 close   total=0.00
