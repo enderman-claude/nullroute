@@ -3,7 +3,6 @@
 VERSION := $(shell sed -n 's/^NR_VERSION="\(.*\)"/\1/p' game/lib/core.sh)
 CC      ?= cc
 WINCC   ?= x86_64-w64-mingw32-gcc
-SHELL_UNDER_TEST ?= sh
 
 CFLAGS  := -std=c99 -Wall -Wextra -Werror -pedantic
 
@@ -12,7 +11,7 @@ CFLAGS  := -std=c99 -Wall -Wextra -Werror -pedantic
 all: launcher
 
 test:
-	NR_TEST_SHELL="$(SHELL_UNDER_TEST)" sh tests/run.sh
+	sh tests/run.sh   # honours NR_TEST_SHELL from the environment
 
 lint:
 	shellcheck -s sh game/bin/nullroute game/lib/*.sh tests/run.sh tools/package.sh
