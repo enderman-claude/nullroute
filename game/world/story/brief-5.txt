@@ -1,9 +1,0 @@
-CHAPTER 5: NULL ROUTE
-
-The broker's own dead drop is linked from the audit vault. Its account
-is protected by a password like all the others.
-
-  scan                          (on audit-vault, to find vell-drop)
-  crack vell-drop vell
-  connect vell-drop vell
-  download /home/vell/vell_manifest.txt

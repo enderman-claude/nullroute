@@ -1,9 +1,0 @@
-CHAPTER 1: COLD START
-
-Crumb & Co. runs forty bakeries and one POS server, crumbco-pos. V wants
-the cash drawer log from the clerk's account on that server.
-
-  scan                          find the hosts your rig can reach
-  crack crumbco-pos clerk       break the clerk's password
-  connect crumbco-pos clerk     log in (the cracked password is remembered)
-  download /home/clerk/cashdrawer.log

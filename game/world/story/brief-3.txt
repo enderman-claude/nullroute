@@ -1,8 +1,0 @@
-CHAPTER 3: GHOST ROUTE
-
-fleet-ctl runs the courier fleet. Its SSH service is open and, by the
-look of it, unpatched. Get a root shell and take the override key.
-
-  scan                          (on meridian-gw, to find fleet-ctl)
-  exploit fleet-ctl ssh
-  download /root/fleet_override.key

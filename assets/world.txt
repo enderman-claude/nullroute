@@ -1,0 +1,406 @@
+# NULLROUTE world data. Read by the game at start-up.
+# See src/core/world.c for the format.
+@host rig
+name: Ghost Rig
+ip: 10.0.0.2
+pos: 0.00 0.50
+unlock: 1
+security: 0
+links: crumbco-pos
+
+@file rig /etc/motd
+Ghost Rig - personal workstation. Unauthorised use is your problem.
+@end
+
+@file rig /home/ghost/notes.txt
+Rig notes
+- Keep the VPN up.
+- Never reuse a password you cracked for anything but the job.
+- Downloads land in ~/loot. Mail arrives in ~/mail.
+@end
+
+@host crumbco-pos
+name: Crumb & Co. POS
+ip: 203.0.113.14
+pos: 0.30 0.50
+unlock: 1
+security: 1
+links: meridian-gw
+service: ssh 22 open
+service: http 80 open
+@user clerk dough
+@user admin changeme
+
+@file crumbco-pos /etc/motd
+Crumb & Co. POS v4.2 - authorised staff only.
+Tills 1-12 online. Head office sends its love.
+@end
+
+@file crumbco-pos /home/clerk/cashdrawer.log
+2041-10-14 06:02 till=03 open    float=200.00
+2041-10-14 06:11 till=03 sale    amount=18.50
+2041-10-14 06:14 till=03 void    amount=412.00 ref=DRN-7731
+2041-10-14 06:14 till=03 void    amount=412.00 ref=DRN-7731
+2041-10-14 06:15 till=03 close   total=0.00
+@end
+
+@file crumbco-pos /home/clerk/notes.txt
+Till 3 keeps voiding the same drone ref. Head office says ignore it.
+Reminder: the gateway admin still uses the rollout password. It is the
+word the board keeps saying in the meetings. I told the Meridian guys
+twice. Nobody changes anything.
+- D.
+@end
+
+@file crumbco-pos /var/log/pos.log
+06:14 sync -> meridian-gw ok
+06:14 sync -> meridian-gw ok
+06:15 sync -> meridian-gw ok
+@end
+
+@host meridian-gw
+name: Meridian Logistics gateway
+ip: 198.51.100.7
+pos: 0.60 0.50
+unlock: 2
+security: 3
+links: fleet-ctl
+service: ssh 22 open
+service: ftp 21 closed
+@user admin quorum
+@user ops hunter2
+
+@file meridian-gw /srv/routes.cfg
+# Meridian fleet routing export (gateway)
+# generated 2041-10-13 23:59
+zone 2  hospital-east   priority=critical  route=direct
+zone 7  res-harbour     priority=low       route=default
+reroute zone 2 -> zone 7   if board_vote=approved  (quorum=5)
+fleet_controller=fleet-ctl
+@end
+
+@file meridian-gw /srv/README
+Routing exports are pushed nightly to the fleet controller.
+Do not edit by hand. Ask the fleet team.
+@end
+
+@file meridian-gw /home/ops/todo.txt
+- rotate the ftp password (ticket MG-220, still open)
+- review courier C-44 hold request
+@end
+
+@host fleet-ctl
+name: Meridian fleet controller
+ip: 192.0.2.60
+pos: 0.90 0.12
+unlock: 3
+security: 4
+links: audit-vault
+service: ssh 22 open
+vuln: ssh
+@user root kestrel
+
+@file fleet-ctl /root/fleet_override.key
+MERIDIAN FLEET OVERRIDE KEY
+key:     4F1A-9C2E-07BD-E5F3
+scope:   board-level reassignment of any courier
+expires: never (ticket MFC-1182 still open)
+@end
+
+@file fleet-ctl /var/log/fleet.log
+2041-10-14 06:01 courier C-44  hold zone-7    reason=board_vote
+2041-10-14 06:41 courier C-44  released       cargo=insulin x40 dest=hospital-east
+2041-10-14 06:41 eta-breach    hospital-east  delay=40min
+@end
+
+@host audit-vault
+name: Meridian audit vault
+ip: 192.0.2.91
+pos: 0.90 0.88
+unlock: 4
+security: 4
+links: vell-drop
+service: ssh 22 open
+service: http 80 open
+@user auditor tesseract
+
+@file audit-vault /var/audit/README
+Board session records. Read-only for auditors. Do not archive
+outside the vault.
+@end
+
+@file audit-vault /var/audit/audit_trail.log
+2041-09-30 BOARD SESSION 0931  item=fuel-budget-q4
+2041-09-30 vote reroute zone2->zone7  ayes=5 noes=3 abstain=1  quorum=5/9  PASS
+2041-09-30 approved_by=V.HALDEN (chair)
+2041-09-30 note: hospital-east impact assessed, accepted (low)
+2041-09-30 linked_dead_drop=vell-drop
+@end
+
+@host vell-drop
+name: Dead drop vell
+ip: 203.0.113.200
+pos: 0.60 0.88
+unlock: 5
+security: 5
+service: ssh 22 open
+@user vell nullroute
+
+@file vell-drop /home/vell/vell_manifest.txt
+PLAN - internal
+1. A cutout (the operator) leaks the reroute trail. Do not sign it.
+2. The cutout gets caught. The breach is charged to the operator.
+3. Pay the operator on delivery. Keep the trail to sell if the press
+   goes quiet.
+4. The chair stays on the board.
+Signed: V.H.
+@end
+
+# ---- missions: id|title|loot file (on the rig, in ~/loot) ----
+@mission 1|Cold Start|cashdrawer.log
+@mission 2|Dead Drop|routes.cfg
+@mission 3|Ghost Route|fleet_override.key
+@mission 4|Quorum|audit_trail.log
+@mission 5|Null Route|vell_manifest.txt
+
+@text intro
+NULLROUTE
+
+2041. The city runs on delivery drones, smart ledgers and a few thousand
+systems nobody meant to connect. You are "ghost", a freelance operator
+working from a rig in a rented flat above a noodle bar in the old
+harbour district.
+
+Three nights ago a job landed in your dead drop. It was signed "V":
+
+  Real money. Start small: a bakery in the east end. Their point of
+  sale talks to something bigger. I need to know what.
+
+Type 'brief' to reread your chapter, and 'help' for the command list.
+@end
+
+@text mail-1
+From: V <v@dropbox.invalid>
+Subject: Start here
+Ghost,
+
+Crumb & Co. is a bakery chain. Their POS server syncs every night to a
+logistics gateway next door, Meridian Logistics. Start with the till
+data. Leave no trace.
+
+- V
+@end
+
+@text brief-1
+CHAPTER 1: COLD START
+
+Crumb & Co. runs forty bakeries and one POS server, crumbco-pos. V wants
+the cash drawer log from the clerk's account on that server.
+
+  scan                                    find the hosts your rig can reach
+  crack crumbco-pos clerk                 break the clerk's password
+  ssh clerk@crumbco-pos                   log in (try 'ls' and 'cat notes.txt')
+  scp crumbco-pos:/home/clerk/cashdrawer.log ~/loot/
+@end
+
+@text complete-1
+The log is full of voids. Every one of them is logged ninety seconds
+after a delivery drone docks at the same loading bay. The bakery is not
+the target. It is the cover.
+@end
+
+@text mail-2
+From: V <v@dropbox.invalid>
+Subject: The gateway
+Ghost,
+
+Clean. The sync goes to Meridian's gateway, which holds the routing
+export for their delivery fleet. I need that export. The clerk's notes
+will tell you where the gateway's admin is weak.
+
+- V
+@end
+
+@text brief-2
+CHAPTER 2: DEAD DROP
+
+The gateway (meridian-gw) is one hop from the bakery. It holds the routing
+export for the whole courier fleet. The clerk's notes mention the gateway
+admin. Read them with cat.
+
+  ssh clerk@crumbco-pos                   (you are on the rig; log in again)
+  scan                                    find meridian-gw from here
+  crack meridian-gw admin
+  exit                                    back to the rig
+  scp meridian-gw:/srv/routes.cfg ~/loot/
+@end
+
+@text complete-2
+The export is short and ugly. Zone 2 is the city hospital. Zone 7 is a
+low-priority residential block. There is a reroute from zone 2 to zone 7
+that only fires when a board vote passes. Someone is steering couriers
+on purpose, and the fleet controller is behind the gateway.
+@end
+
+@text mail-3
+From: V <v@dropbox.invalid>
+Subject: Fleet controller
+Ghost,
+
+The fleet runs from fleet-ctl, which is not on any menu you will be given.
+Look at what the gateway can see. I need fleet_override.key from /root on
+that box. It lets anyone reassign any courier from the console.
+
+- V
+@end
+
+@text brief-3
+CHAPTER 3: GHOST ROUTE
+
+fleet-ctl runs the courier fleet. Its SSH service is open and, by the look
+of it, unpatched. Get a root shell there and take the override key from /root.
+
+  ssh admin@meridian-gw
+  scan                                    find fleet-ctl from here
+  exploit fleet-ctl ssh
+  exit                                    back to meridian-gw
+  exit                                    back to the rig
+  scp fleet-ctl:/root/fleet_override.key ~/loot/
+@end
+
+@text complete-3
+The override key can move any courier. The fleet log shows courier C-44
+held in zone 7 for forty minutes while it carried insulin for the hospital
+in zone 2.
+@end
+
+@text mail-4
+From: V <v@dropbox.invalid>
+Subject: The vote
+Ghost,
+
+The board vote that approved the reroute is recorded in the audit vault.
+It is linked from the fleet controller. Whoever signed that vote knows
+what happened to C-44. Pull the trail.
+
+- V
+@end
+
+@text brief-4
+CHAPTER 4: QUORUM
+
+The board vote that approved the reroute is recorded in audit-vault. Its
+auditor account is protected by a password. The vault is reached through
+the fleet controller.
+
+  exploit fleet-ctl ssh
+  scan                                    find audit-vault from here
+  crack audit-vault auditor
+  exit
+  scp audit-vault:/var/audit/audit_trail.log ~/loot/
+@end
+
+@text complete-4
+The trail is the whole story. Board session 0931: reroute zone 2 to zone 7
+to save fuel, passed 5 to 3. Approved by the board chair, Vesna Halden.
+The trail also names a dead-drop host, vell-drop, linked from this vault.
+Vell is the handle on the job offer. The chair and the broker are the
+same person.
+@end
+
+@text mail-5
+From: V <v@dropbox.invalid>
+Subject: Last host
+Ghost,
+
+You have come further than I expected. Vell-drop is the last host. It
+holds the plan I need you to read.
+
+- V
+@end
+
+@text brief-5
+CHAPTER 5: NULL ROUTE
+
+The broker's own dead drop is linked from the audit vault. Its account is
+protected by a password like all the others.
+
+  ssh auditor@audit-vault
+  scan                                    find vell-drop from here
+  crack vell-drop vell
+  exit
+  scp vell-drop:/home/vell/vell_manifest.txt ~/loot/
+
+When you are ready, type 'publish' or 'sell'.
+@end
+
+@text complete-5
+The manifest is a plan. The chair approved the reroute, then hired you to
+expose the trail. When the leak lands, the operator who breached the
+gateway is the one charged. You were never the client. You were the cover.
+@end
+
+@text ending-publish
+You send the audit trail, the routing export and the fleet log to three
+newsrooms and a transport regulator, with the manifest attached.
+
+By the next morning the story is everywhere. Meridian suspends the board.
+Vesna Halden is stopped at a train station, still holding a coffee. The
+insulin reached the hospital forty minutes late. Nobody can make that up.
+
+Your name is not in any of the reports. You go back to the rig and wait
+for the next dead drop. It is only a matter of time.
+@end
+
+@text ending-sell
+You open an account, dial in to a number that is not on any map, and sell
+the evidence back to Vesna Halden for the price of a flat in the harbour
+district.
+
+The routes stay as they are. The fleet keeps taking the short way through
+zone 7. Somewhere a courier waits at a red light with insulin in the back.
+You tell yourself you can live with it.
+
+The next week, a new dead drop arrives. It is signed "V".
+@end
+
+@wordlist
+password
+letmein
+summer
+winter
+qwerty
+dragon
+monkey
+welcome
+sunshine
+secret
+orbit
+harbor
+lantern
+violet
+zephyr
+ledger
+vector
+cipher
+shadow
+ghost
+route
+fleet
+drone
+meridian
+sourdough
+dough
+bakery
+crumb
+coffee
+lunch
+rolling
+hello
+changeme
+hunter2
+quorum
+kestrel
+tesseract
+nullroute
+@end

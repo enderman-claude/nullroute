@@ -1,7 +1,0 @@
-PLAN - internal
-1. A cutout (the operator) leaks the reroute trail. Do not sign it.
-2. The cutout gets caught. The breach is charged to the operator.
-3. Pay the operator on delivery. Keep the trail to sell if the press
-   goes quiet.
-4. The chair stays on the board.
-Signed: V.H.

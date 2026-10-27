@@ -1,2 +1,0 @@
-- rotate the ftp password (ticket MG-220, still open)
-- review courier C-44 hold request

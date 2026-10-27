@@ -1,7 +1,0 @@
-name=Crumb & Co. POS
-ip=203.0.113.14
-unlock=1
-security=1
-links=meridian-gw
-service=ssh:22:open
-service=http:80:open

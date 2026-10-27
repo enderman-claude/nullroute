@@ -1,9 +1,0 @@
-CHAPTER 4: QUORUM
-
-The board vote that approved the reroute is recorded in audit-vault.
-Its auditor account is protected by a password. Same toolkit as before.
-
-  scan                          (on fleet-ctl, to find audit-vault)
-  crack audit-vault auditor
-  connect audit-vault auditor
-  download /var/audit/audit_trail.log

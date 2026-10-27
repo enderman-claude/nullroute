@@ -1,7 +1,0 @@
-name=Meridian fleet controller
-ip=192.0.2.60
-unlock=3
-security=4
-links=audit-vault
-service=ssh:22:open
-vuln=ssh

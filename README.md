@@ -1,112 +1,136 @@
 # NULLROUTE
 
-A terminal hacking game in **POSIX sh**. You are a freelance operator with a
-rig, a wordlist and a dead-drop job. Crack passwords, scan the network,
-exploit a fleet controller, read the audit trail, and decide what to do with
-the evidence at the end.
+A hacking game for Linux and Windows, built on a fake POSIX machine.
 
-Inspired by Hacknet's network-map loop and Uplink's trace pressure. The story is in [docs/STORY.md](docs/STORY.md).
+You are **ghost**, a freelance operator with a rig above a noodle bar in the
+old harbour district. A job arrives through a dead drop: crack a bakery's
+point-of-sale server, follow its sync to a logistics gateway, and work your
+way through a courier fleet to the evidence behind a reroute that puts a
+hospital's insulin deliveries on a residential street. The story is told in
+mail, logs and briefs you read through the in-game terminal and notepad.
+[docs/STORY.md](docs/STORY.md) has the full arc.
 
-## Play
+The game takes no arguments. Start it, pick **New game** or **Continue**, and
+play. Everything else happens inside the window.
+
+Inspired by Hacknet's network-map loop and Uplink's trace pressure.
+
+## What is inside the window
+
+- **Terminal.** A POSIX-style shell with quoting, variables, `$?`, pipelines,
+  redirections, `&&`/`||`/`;`, `if`/`while`/`until`/`for`, arithmetic, command
+  substitution, globbing and shell scripts (`sh FILE ARGS`). It runs against a
+  virtual file system, never the real one.
+- **Coreutils.** The GNU coreutils subset a Linux box ships with: `cat cp cut
+  date dirname echo env false head hostname id ls mkdir mv printenv printf pwd
+  rm rmdir seq sleep sort tail tee test touch tr true uname uniq wc whoami
+  basename chmod`. There is no grep, find or nano. Those are deliberately left
+  out.
+- **Hacking toolkit.** Game programs that only exist on the rig and the
+  machines you have taken: `scan`, `portscan`, `crack`, `ssh`, `scp`,
+  `exploit`, `notepad`, `brief`, `status`, `publish`, `sell`, `help`.
+- **Notepad.** A real text editor window. `notepad FILE` opens any file on the
+  current machine; Ctrl+S saves it back. There is no nano.
+- **Network map.** Hosts appear as you scan them. Rooted hosts are marked.
+- **Trace.** Every command on a remote machine raises the trace. At 100% the
+  owner finds your rig and drops the connection.
+- **Saves.** Progress saves automatically. Esc opens the pause menu, which can
+  save and return to the menu.
+
+## Controls
+
+| Key | Action |
+|---|---|
+| Enter | run the command / confirm |
+| Up / Down | command history (Down/Up in menus to move selection) |
+| Tab | complete commands and file names |
+| Ctrl+L | clear the terminal |
+| Ctrl+C | cancel the current line |
+| F2 | switch focus between terminal and notepad |
+| Ctrl+S | save the file in the notepad |
+| Esc | pause menu |
+
+Mouse: click the menu buttons, click a panel to focus it, scroll the terminal
+with the wheel.
+
+## Playing
+
+The first moves are always the same:
+
+```
+scan                                      find what the rig can reach
+crack crumbco-pos clerk                   break the clerk's password
+scp crumbco-pos:/home/clerk/cashdrawer.log ~/loot/
+```
+
+`scp` copies run from the rig, so `exit` back to the rig before copying. The
+chapter brief (`brief`) lists the next steps; the story is in the mail
+(`mail`-style: `cat ~/mail/001.txt`, or `notepad ~/mail/001.txt`).
+
+Chapters complete when their file arrives in `~/loot`. After the last one you
+choose between `publish` and `sell`.
+
+## Building
+
+You need CMake 3.16 or newer and a C compiler. raylib 5.5 is fetched and
+built automatically.
+
+On Linux, install the windowing headers first (Debian/Ubuntu):
 
 ```sh
-# Any POSIX shell works. Linux and macOS:
-sh game/bin/nullroute
-
-# Or with the native launcher (Linux, Windows):
-./nullroute          # Linux
-nullroute.exe        # Windows, needs Git for Windows or MSYS2 (sh.exe on PATH)
+sudo apt-get install libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl-dev
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build
+./build/nullroute
 ```
 
-Options:
+On Windows, the release archives contain a ready-to-run `nullroute.exe`. To
+build it yourself, use a MinGW-w64 cross-compiler from Linux:
 
+```sh
+cmake -S . -B build-win -DCMAKE_TOOLCHAIN_FILE=cmake/mingw-w64-x86_64.cmake -DCMAKE_BUILD_TYPE=Release
+cmake --build build-win
 ```
--n        start a new game (erases progress)
--s DIR    keep save data in DIR (default ~/.local/state/nullroute)
--h        help
--V        version
-```
 
-Type `objectives` for the brief and `help` for the command list. The first
-moves are always the same: `scan`, then `crack crumbco-pos clerk`.
-
-## Commands at a glance
-
-| Command                  | What it does                                                  |
-|--------------------------|---------------------------------------------------------------|
-| `scan`                   | Reveal hosts linked from the current machine                  |
-| `connect HOST USER [PW]` | Log in to a discovered host (saved passwords are reused)      |
-| `disconnect` / `exit`    | Leave the remote host and return to your rig                  |
-| `portscan HOST`          | List services on a discovered host                            |
-| `crack HOST USER`        | Dictionary attack against an SSH account                      |
-| `exploit HOST SERVICE`   | Use a vulnerability to get a root shell                       |
-| `ls cd pwd cat head tail wc` | Read the remote filesystem                                |
-| `grep [-ivn] PAT FILE`   | Search one file                                               |
-| `find [PATH] [-name G]`  | Find files                                                    |
-| `cp mv rm mkdir touch`   | Change the remote filesystem (protected dirs stay protected)  |
-| `download PATH`          | Copy a remote file into `~/loot` on your rig                  |
-| `mail [N]`               | Read your mail                                                |
-| `status`, `objectives`   | Progress and the current brief                                |
-| `publish` / `sell`       | The final choice, after chapter 5                             |
-
-Every remote command raises your **trace**. At 100% you are thrown off the
-host, so plan which host you touch and how often.
-
-## How it is built
-
-The game is plain POSIX sh, with no bashisms, split into small libraries:
-
-| File                    | Role                                                    |
-|-------------------------|---------------------------------------------------------|
-| `game/bin/nullroute`    | Entry point: options, sourcing libraries, starting      |
-| `game/lib/core.sh`      | Paths, persistent key=value state, hashing, story I/O   |
-| `game/lib/vfs.sh`       | Sandboxed filesystem commands                           |
-| `game/lib/net.sh`       | scan, connect, crack, exploit, download, trace          |
-| `game/lib/missions.sh`  | Chapter progression, mail, endings                      |
-| `game/lib/shell.sh`     | REPL, prompt, dispatch, help                            |
-| `game/world/`           | Hosts, wordlist, missions and story (plain text)        |
-| `launcher/nullroute.c`  | Native launcher for Windows and Linux (no game logic)   |
-
-Some POSIX choices worth knowing:
-
-- **Sandbox.** Every path is normalised against the session's working
-  directory and then mapped under the host's own folder. `..` cannot climb out.
-  Real utilities only ever see paths already checked by the sandbox.
-- **Whitelisted flags.** Commands that pass arguments to real tools (such as
-  `grep`) accept a fixed set of flags. Otherwise `grep -f` could read files
-  from your real machine.
-- **Save data is plain text.** `state` is key=value lines, `creds` is three
-  columns, and the world directory is copied once so that the player's changes
-  to remote hosts persist. Everything is editable with a text editor.
-- **Hashing.** Passwords are hashed with `cksum`, which is POSIX and
-  everywhere. It is not secure, and that is the point of the game: the
-  wordlist attack is fast enough to be fun.
+The game needs `assets/` next to the executable. The build copies it there.
 
 ## Tests
 
-```sh
-make test                     # runs under sh (dash on Ubuntu)
-NR_TEST_SHELL="bash --posix" make test
-NR_TEST_SHELL="busybox sh"   make test
-make lint                     # shellcheck over every script
-```
-
-The suite plays scripted sessions: it checks discovery, cracking, sandbox
-escapes, permissions, flags, protected folders, trace, persistence, the full
-five-chapter walkthrough, and both endings.
-
-## Build
+The core has no dependency on the window, so its tests run headless:
 
 ```sh
-make launcher                 # build/nullroute (Linux, needs cc)
-make launcher-win             # build/nullroute.exe (needs x86_64-w64-mingw32-gcc)
-make package                  # dist/ archives for both
+ctest --test-dir build --output-on-failure
 ```
 
-CI builds both launchers on every push, runs the tests under dash, bash
-`--posix` and busybox, and publishes release archives when a `v*` tag is
-pushed. See [.github/workflows/ci.yml](.github/workflows/ci.yml).
+They cover path normalisation, the virtual file system, the shell language,
+the coreutils, the hacking mechanics, the trace, a full playthrough to the
+ending, and save and load.
+
+## Layout
+
+| Path | Contents |
+|---|---|
+| `src/core/` | the fake machine: VFS, shell, coreutils, tools, game state, world loader. Plain C99, no dependencies |
+| `src/gui/` | the window: menus, screens, terminal, notepad and network map on raylib |
+| `assets/world.txt` | hosts, file systems, missions, story text and the wordlist, in plain text |
+| `assets/fonts/` | DejaVu Sans Mono (see its licence file) |
+| `tests/test_core.c` | the core test suite |
+| `cmake/` | MinGW-w64 cross-compile toolchain |
+| `docs/STORY.md` | the story |
+
+To add a host or a chapter, edit `assets/world.txt`; the format is described
+at the top of `src/core/world.c`.
+
+## Limits
+
+- The shell has no subshells `( )`, background jobs `&`, here-documents, case
+  or functions. Those are reported as syntax errors.
+- Passwords are hashed with FNV-1a. It is not secure, and it is not meant to
+  be: the wordlist attack is the game.
+- The Windows build is a console-subsystem executable, so a console window
+  appears behind the game.
 
 ## Licence
 
-MIT. See [LICENSE](LICENSE).
+MIT, see [LICENSE](LICENSE). raylib is zlib-licensed. DejaVu Sans Mono is
+licensed under the Bitstream Vera licence, see `assets/fonts/DejaVu-LICENSE.txt`.

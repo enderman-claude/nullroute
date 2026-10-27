@@ -1,9 +1,0 @@
-From: V <v@dropbox.invalid>
-Subject: Fleet controller
-Ghost,
-
-The fleet runs from fleet-ctl, which is not on any menu you will be given.
-Look at what the gateway can see. I need fleet_override.key from /root on
-that box. It lets anyone reassign any courier from the console.
-
-- V

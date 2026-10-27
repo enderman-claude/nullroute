@@ -1,4 +1,5 @@
 build/
+build-*/
 dist/
+*.tmp
 *.tmp.*
-.nullroute-test/
