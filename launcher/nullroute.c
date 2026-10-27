@@ -47,6 +47,17 @@
 
 #define VERSION "0.1.0"
 
+/* Returns 1 if the file can be opened for reading. */
+static int file_exists(const char *path)
+{
+    FILE *f = fopen(path, "rb");
+    if (f == NULL) {
+        return 0;
+    }
+    fclose(f);
+    return 1;
+}
+
 /* Removes the last path component in place. Returns 0 if there was none. */
 static int strip_last(char *path)
 {
@@ -159,10 +170,23 @@ int main(int argc, char **argv)
         return 1;
     }
 
+    /* Packaged layout first (game/ beside the launcher). Inside a source
+     * checkout the launcher usually sits in build/, so also try ../game. */
     if (snprintf(script, sizeof script, "%s%cgame%cbin%cnullroute",
                  dir, DIR_SEP, DIR_SEP, DIR_SEP) >= (int)sizeof script) {
         fprintf(stderr, "nullroute: path too long\n");
         return 1;
+    }
+    if (!file_exists(script)) {
+        if (snprintf(script, sizeof script, "%s%c..%cgame%cbin%cnullroute",
+                     dir, DIR_SEP, DIR_SEP, DIR_SEP, DIR_SEP) >= (int)sizeof script) {
+            fprintf(stderr, "nullroute: path too long\n");
+            return 1;
+        }
+        if (!file_exists(script)) {
+            fprintf(stderr, "nullroute: cannot find game/bin/nullroute next to the launcher\n");
+            return 1;
+        }
     }
 
     shell = getenv("NULLROUTE_SH");
