@@ -91,7 +91,7 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends \
-            gcc-mingw-w64-x86-64 libc6-dev-amd64 zip
+            gcc-mingw-w64-x86-64 zip
 
       - name: Build launcher
         run: make launcher-win
