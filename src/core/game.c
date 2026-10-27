@@ -348,6 +348,9 @@ int game_save(Game *g, const char *save_path)
     buf_fmt(&b, "mission %d\n", g->mission);
     buf_fmt(&b, "won %d\n", g->won);
     buf_fmt(&b, "firstrun %d\n", g->first_run);
+    buf_fmt(&b, "apps %d %d %d %d %d %d\n", g->app_open[0], g->app_open[1], g->app_open[2],
+            g->app_pinned[0], g->app_pinned[1], g->app_pinned[2]);
+    buf_fmt(&b, "srv %s %d\n", g->srv_host[0] ? g->srv_host : "-", g->srv_port);
     buf_fmt(&b, "ending %s\n", g->ending);
     for (int i = 0; i < g->nhosts; i++) {
         Host *h = &g->hosts[i];
@@ -437,6 +440,21 @@ int game_load(Game *g, const char *world_path, const char *save_path)
             g->won = atoi(line + 4);
         } else if (strncmp(line, "firstrun ", 9) == 0) {
             g->first_run = atoi(line + 9);
+        } else if (strncmp(line, "apps ", 5) == 0) {
+            int v[6] = {0, 0, 0, 0, 0, 0};
+            if (sscanf(line + 5, "%d %d %d %d %d %d", &v[0], &v[1], &v[2], &v[3], &v[4], &v[5]) == 6) {
+                for (int i = 0; i < APP_COUNT; i++) {
+                    g->app_open[i] = v[i];
+                    g->app_pinned[i] = v[i + 3];
+                }
+            }
+        } else if (strncmp(line, "srv ", 4) == 0) {
+            char host[NR_NAME_MAX];
+            int port = 0;
+            if (sscanf(line + 4, "%63s %d", host, &port) == 2 && strcmp(host, "-") != 0) {
+                snprintf(g->srv_host, sizeof g->srv_host, "%s", host);
+                g->srv_port = port;
+            }
         } else if (strncmp(line, "ending ", 7) == 0) {
             snprintf(g->ending, sizeof g->ending, "%s", line + 7);
         } else if (strncmp(line, "host ", 5) == 0) {
@@ -485,9 +503,109 @@ int game_load(Game *g, const char *world_path, const char *save_path)
     if (!ok) {
         return -1;
     }
+    /* cmpview is always open, whatever the save says. */
+    g->app_open[APP_CMPVIEW] = 1;
+    g->app_pinned[APP_CMPVIEW] = 1;
     g->top = session_new_rig(g);
     g->dirty = 0;
     return 0;
+}
+
+/* ---------- apps ---------- */
+
+const char *const nr_app_names[APP_COUNT] = {"cmpview", "notepad", "mail"};
+
+void game_apps_reset(Game *g)
+{
+    memset(g->app_open, 0, sizeof g->app_open);
+    memset(g->app_pinned, 0, sizeof g->app_pinned);
+    g->app_open[APP_CMPVIEW] = 1;
+    g->app_pinned[APP_CMPVIEW] = 1;
+    g->app_focus = 0;
+    g->srv_host[0] = '\0';
+    g->srv_port = 0;
+}
+
+int game_app_by_name(const char *name)
+{
+    for (int i = 0; i < APP_COUNT; i++) {
+        if (strcmp(nr_app_names[i], name) == 0) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+/* What a service says when you connect to it. */
+const char *service_banner(const char *service)
+{
+    if (strcmp(service, "ssh") == 0) {
+        return "SSH-2.0-NullOS_4.1";
+    }
+    if (strcmp(service, "http") == 0) {
+        return "HTTP/1.1 200 OK  Server: nullroute-httpd";
+    }
+    if (strcmp(service, "ftp") == 0) {
+        return "220 NullOS FTP ready";
+    }
+    return "(no banner)";
+}
+
+/* cmpview: a summary of whatever the player is looking at right now. It
+ * follows the session: the machine you are on, your folder, your trace. */
+void game_cmpview(Game *g, Buf *out)
+{
+    Session *s = g->top;
+    Host *h = s->host;
+    buf_str(out, "== cmpview ==\n");
+    buf_fmt(out, "session  %s@%s  %s\n", s->user, h->id, s->cwd);
+    buf_fmt(out, "machine  %s (%s)  security %d\n", h->name, h->ip, h->security);
+    if (h == g->rig) {
+        buf_str(out, "status   your rig\n");
+    } else {
+        buf_fmt(out, "status   %s  trace %d%%\n", h->owned ? "ROOTED" : "remote", s->trace);
+    }
+    buf_str(out, "services\n");
+    if (h->nservices == 0) {
+        buf_str(out, "  none\n");
+    }
+    for (int i = 0; i < h->nservices; i++) {
+        buf_fmt(out, "  %-6s %5d  %s\n", h->services[i].name, h->services[i].port,
+                h->services[i].open ? "open" : "closed");
+    }
+    if (g->srv_port > 0) {
+        Host *sv = host_find(g->hosts, g->nhosts, g->srv_host);
+        const char *svc = "?";
+        int open = 0;
+        if (sv != NULL) {
+            for (int i = 0; i < sv->nservices; i++) {
+                if (sv->services[i].port == g->srv_port) {
+                    svc = sv->services[i].name;
+                    open = sv->services[i].open;
+                }
+            }
+        }
+        buf_fmt(out, "server   %s:%d %s (%s)\n", g->srv_host, g->srv_port, svc, open ? "open" : "closed");
+        buf_fmt(out, "banner   %s\n", service_banner(svc));
+    }
+    buf_fmt(out, "chapter  %d/%d %s\n", g->mission, g->missions, g->mission_title[g->mission - 1]);
+
+    /* Context-aware hints: what the machine in front of you suggests next. */
+    if (h == g->rig && !(h->discovered)) {
+        int any = 0;
+        for (int i = 0; i < g->nhosts; i++) {
+            any |= g->hosts[i].discovered;
+        }
+        if (!any) {
+            buf_str(out, "tip      scan finds the hosts this rig can reach.\n");
+        }
+    }
+    if (h != g->rig && !h->owned && h->vuln[0] != '\0') {
+        buf_fmt(out, "tip      %s may be exploitable: exploit %s %s\n", h->id, h->id, h->vuln);
+    }
+    if (h != g->rig && !h->owned && h->nusers > 0 && game_find_cred(g, h->id, h->users[0].name) == NULL) {
+        buf_fmt(out, "tip      you have no password for %s yet: crack %s %s\n", h->id, h->id, h->users[0].name);
+    }
 }
 
 /* ---------- lifecycle ---------- */
@@ -502,6 +620,7 @@ int game_new(Game *g, const char *world_path)
     g->mission = 1;
     g->won = 0;
     g->first_run = 1;
+    game_apps_reset(g);
     g->ending[0] = '\0';
     g->top = session_new_rig(g);
     deliver_mail(g, 1);

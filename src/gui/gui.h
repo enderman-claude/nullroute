@@ -64,6 +64,20 @@ void np_draw(Notepad *n, Rectangle r, int focused);
 
 void netmap_draw(Game *g, Rectangle r);
 
+/* ---------- apps panel (apps.c) ---------- */
+
+typedef enum { LANG_TEXT, LANG_SH, LANG_MAIL, LANG_CFG } Lang;
+
+typedef struct AppsView {
+    int active;      /* AppId shown in the panel */
+    int mail_sel;    /* selected message in the mail reader */
+} AppsView;
+
+Lang lang_for_path(const char *path);
+void hl_draw_line(Lang lang, const char *s, size_t n, float x, float y);
+void apps_draw(Game *g, Notepad *np, AppsView *av, Rectangle r, int focused);
+int apps_update(Game *g, Notepad *np, AppsView *av, Rectangle r, int focused);
+
 /* Shared font helpers. */
 void gui_font_init(const char *path);
 

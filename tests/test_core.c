@@ -667,6 +667,73 @@ TEST(profile_runs_tutorial_once)
     run_done(&r);
 }
 
+TEST(apps_pin_close_rules)
+{
+    Run r;
+    run_init(&r);
+    CHECK(r.g.app_open[APP_CMPVIEW] == 1 && r.g.app_pinned[APP_CMPVIEW] == 1);
+    CHECK(strstr(typed(&r, "close cmpview"), "always open") != NULL);
+    CHECK(strstr(typed(&r, "unpin cmpview"), "always open") != NULL);
+    CHECK(r.g.app_open[APP_CMPVIEW] == 1);
+    typed(&r, "mail");
+    CHECK(r.g.app_open[APP_MAIL] == 1 && r.g.app_focus == APP_MAIL + 1);
+    typed(&r, "pin mail");
+    CHECK(r.g.app_pinned[APP_MAIL] == 1);
+    CHECK(strstr(typed(&r, "close mail"), "is pinned") != NULL);
+    CHECK(r.g.app_open[APP_MAIL] == 1);
+    typed(&r, "unpin mail");
+    typed(&r, "close mail");
+    CHECK(r.g.app_open[APP_MAIL] == 0);
+    CHECK(strstr(typed(&r, "pin banana"), "unknown app") != NULL);
+    /* notepad opens its own tab and asks for the panel's focus */
+    typed(&r, "notepad /home/ghost/notes.txt");
+    CHECK(r.g.app_open[APP_NOTEPAD] == 1);
+    CHECK(r.g.app_focus == APP_NOTEPAD + 1);
+    run_done(&r);
+}
+
+TEST(showserver_points_cmpview_at_a_service)
+{
+    Run r;
+    run_init(&r);
+    /* crumbco-pos is not discovered yet, so it cannot be shown. */
+    CHECK(strstr(typed(&r, "showserver crumbco-pos@22"), "not in your scan results") != NULL);
+    typed(&r, "scan");
+    const char *o = typed(&r, "showserver 203.0.113.14@22");
+    CHECK(strstr(o, "showing crumbco-pos:22 (ssh)") != NULL);
+    CHECK(r.g.srv_port == 22);
+    CHECK_STR(r.g.srv_host, "crumbco-pos");
+    CHECK(r.g.app_focus == APP_CMPVIEW + 1);
+    /* Bad ports and missing services are refused. */
+    CHECK(strstr(typed(&r, "showserver crumbco-pos@9999"), "no service on port 9999") != NULL);
+    CHECK(strstr(typed(&r, "showserver crumbco-pos@abc"), "bad port") != NULL);
+    /* Without an address the service is looked up on this machine. */
+    CHECK(strstr(typed(&r, "showserver 9999"), "no service on port 9999") != NULL);
+    run_done(&r);
+}
+
+TEST(cmpview_follows_the_session)
+{
+    Run r;
+    run_init(&r);
+    Buf o;
+    buf_init(&o);
+    game_cmpview(&r.g, &o);
+    CHECK(strstr(o.data, "your rig") != NULL);
+    CHECK(strstr(o.data, "chapter  1/5") != NULL);
+    buf_free(&o);
+    typed(&r, "scan");
+    typed(&r, "crack crumbco-pos clerk");
+    typed(&r, "ssh clerk@crumbco-pos");
+    buf_init(&o);
+    game_cmpview(&r.g, &o);
+    CHECK(strstr(o.data, "session  clerk@crumbco-pos") != NULL);
+    CHECK(strstr(o.data, "ssh") != NULL && strstr(o.data, "22  open") != NULL);
+    CHECK(strstr(o.data, "trace") != NULL);
+    buf_free(&o);
+    run_done(&r);
+}
+
 int main(int argc, char **argv)
 {
     world_path = argc > 1 ? argv[1] : "assets/world.txt";
@@ -694,6 +761,9 @@ int main(int argc, char **argv)
     run_full_playthrough_reaches_the_ending();
     run_scp_only_runs_from_the_rig();
     run_profile_runs_tutorial_once();
+    run_apps_pin_close_rules();
+    run_showserver_points_cmpview_at_a_service();
+    run_cmpview_follows_the_session();
     run_save_and_load_round_trip();
 
     printf("\n%d tests, %d failed\n", tests_run, tests_failed);

@@ -35,7 +35,7 @@ if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
 endif()
 
 # ---- game: window, menus and the terminal widget ----
-add_executable(nullroute src/gui/main.c src/gui/ui.c)
+add_executable(nullroute src/gui/main.c src/gui/ui.c src/gui/apps.c)
 target_include_directories(nullroute PRIVATE src/gui)
 target_link_libraries(nullroute PRIVATE nr_core raylib)
 if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")

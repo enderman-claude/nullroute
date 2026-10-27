@@ -294,6 +294,8 @@ static int tool_notepad(Ctx *c, int argc, char **argv)
     c->g->notepad.pending = 1;
     c->g->notepad.host = c->s->host;
     snprintf(c->g->notepad.path, sizeof c->g->notepad.path, "%s", abs);
+    c->g->app_open[APP_NOTEPAD] = 1;
+    c->g->app_focus = APP_NOTEPAD + 1;
     buf_fmt(c->out, "notepad: opening %s\n", abs);
     return 0;
 }
@@ -398,6 +400,158 @@ static int tool_help(Ctx *c, int argc, char **argv)
     return 0;
 }
 
+
+/* ---------- apps ---------- */
+
+static int tool_apps(Ctx *c, int argc, char **argv)
+{
+    (void)argc;
+    (void)argv;
+    for (int i = 0; i < APP_COUNT; i++) {
+        const char *state = c->g->app_open[i] ? "open" : "closed";
+        const char *pin = c->g->app_pinned[i] ? (i == APP_CMPVIEW ? ", always open" : ", pinned") : "";
+        buf_fmt(c->out, "  %-8s %s%s\n", nr_app_names[i], state, pin);
+    }
+    return 0;
+}
+
+static int app_arg(Ctx *c, int argc, char **argv, const char *usage)
+{
+    if (argc != 2) {
+        buf_fmt(c->err, "usage: %s\n", usage);
+        return -1;
+    }
+    int id = game_app_by_name(argv[1]);
+    if (id < 0) {
+        buf_fmt(c->err, "%s: unknown app '%s' (try: cmpview notepad mail)\n", argv[0], argv[1]);
+        return -1;
+    }
+    return id;
+}
+
+static int tool_pin(Ctx *c, int argc, char **argv)
+{
+    int id = app_arg(c, argc, argv, "pin APP");
+    if (id < 0) {
+        return 2;
+    }
+    c->g->app_open[id] = 1;
+    c->g->app_pinned[id] = 1;
+    c->g->dirty = 1;
+    buf_fmt(c->out, "pinned %s: it stays open.\n", nr_app_names[id]);
+    return 0;
+}
+
+static int tool_unpin(Ctx *c, int argc, char **argv)
+{
+    int id = app_arg(c, argc, argv, "unpin APP");
+    if (id < 0) {
+        return 2;
+    }
+    if (id == APP_CMPVIEW) {
+        buf_str(c->err, "cmpview is always open and cannot be unpinned.\n");
+        return 1;
+    }
+    c->g->app_pinned[id] = 0;
+    c->g->dirty = 1;
+    buf_fmt(c->out, "unpinned %s: close it with 'close %s' when you are done.\n", nr_app_names[id], nr_app_names[id]);
+    return 0;
+}
+
+static int tool_close(Ctx *c, int argc, char **argv)
+{
+    int id = app_arg(c, argc, argv, "close APP");
+    if (id < 0) {
+        return 2;
+    }
+    if (id == APP_CMPVIEW) {
+        buf_str(c->err, "cmpview is always open and cannot be closed.\n");
+        return 1;
+    }
+    if (c->g->app_pinned[id]) {
+        buf_fmt(c->err, "%s is pinned. Run 'unpin %s' first.\n", nr_app_names[id], nr_app_names[id]);
+        return 1;
+    }
+    c->g->app_open[id] = 0;
+    c->g->dirty = 1;
+    buf_fmt(c->out, "closed %s.\n", nr_app_names[id]);
+    return 0;
+}
+
+static int tool_mail(Ctx *c, int argc, char **argv)
+{
+    (void)argc;
+    (void)argv;
+    c->g->app_open[APP_MAIL] = 1;
+    c->g->app_focus = APP_MAIL + 1;
+    c->g->dirty = 1;
+    buf_str(c->out, "mail: opening your inbox.\n");
+    return 0;
+}
+
+static int tool_cmpview(Ctx *c, int argc, char **argv)
+{
+    (void)argc;
+    (void)argv;
+    c->g->app_focus = APP_CMPVIEW + 1;
+    return 0;
+}
+
+/* showserver [IP|HOST@]PORT: point cmpview at a service. Without an address
+ * the service is looked up on the machine you are on. */
+static int tool_showserver(Ctx *c, int argc, char **argv)
+{
+    if (argc != 2) {
+        buf_str(c->err, "usage: showserver [IP|HOST@]PORT\n");
+        return 2;
+    }
+    const char *arg = argv[1];
+    const char *at = strchr(arg, '@');
+    const char *portstr = at ? at + 1 : arg;
+    char *end = NULL;
+    long port = strtol(portstr, &end, 10);
+    if (end == portstr || *end != '\0' || port <= 0 || port > 65535) {
+        buf_fmt(c->err, "showserver: bad port '%s'\n", portstr);
+        return 2;
+    }
+    Host *h = c->s->host;
+    if (at != NULL) {
+        char who[NR_NAME_MAX];
+        snprintf(who, sizeof who, "%.*s", (int)(at - arg), arg);
+        h = NULL;
+        for (int i = 0; i < c->g->nhosts; i++) {
+            Host *cand = &c->g->hosts[i];
+            if (strcmp(cand->id, who) == 0 || strcmp(cand->ip, who) == 0) {
+                h = cand;
+            }
+        }
+        if (h == NULL) {
+            buf_fmt(c->err, "showserver: unknown host '%s'\n", who);
+            return 1;
+        }
+    }
+    if (h != c->g->rig && !h->discovered) {
+        buf_fmt(c->err, "showserver: %s is not in your scan results\n", h->id);
+        return 1;
+    }
+    const char *svc = NULL;
+    for (int i = 0; i < h->nservices; i++) {
+        if (h->services[i].port == port) {
+            svc = h->services[i].name;
+        }
+    }
+    if (svc == NULL) {
+        buf_fmt(c->err, "showserver: no service on port %ld at %s\n", port, h->id);
+        return 1;
+    }
+    snprintf(c->g->srv_host, sizeof c->g->srv_host, "%s", h->id);
+    c->g->srv_port = (int)port;
+    c->g->app_focus = APP_CMPVIEW + 1;
+    c->g->dirty = 1;
+    buf_fmt(c->out, "cmpview: showing %s:%ld (%s)\n", h->id, port, svc);
+    return 0;
+}
+
 const Cmd nr_tools[] = {
     {"scan", tool_scan},
     {"portscan", tool_portscan},
@@ -411,6 +565,13 @@ const Cmd nr_tools[] = {
     {"publish", tool_publish},
     {"sell", tool_sell},
     {"help", tool_help},
+    {"apps", tool_apps},
+    {"pin", tool_pin},
+    {"unpin", tool_unpin},
+    {"close", tool_close},
+    {"mail", tool_mail},
+    {"cmpview", tool_cmpview},
+    {"showserver", tool_showserver},
     {NULL, NULL}
 };
 

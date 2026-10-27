@@ -179,6 +179,10 @@ void session_setvar(Session *s, const char *name, const char *value);
 
 /* ---------- game state ---------- */
 
+/* Apps shown in the right-hand panel. cmpview is always open. */
+typedef enum { APP_CMPVIEW = 0, APP_NOTEPAD, APP_MAIL, APP_COUNT } AppId;
+extern const char *const nr_app_names[APP_COUNT];
+
 typedef struct Cred {
     char host[NR_NAME_MAX];
     char user[32];
@@ -223,6 +227,12 @@ struct Game {
     int ncreds;
     int first_run;         /* 1 until the rig's profile has run once */
 
+    int app_open[APP_COUNT];
+    int app_pinned[APP_COUNT];
+    int app_focus;         /* request to focus an app: AppId + 1, or 0 */
+    char srv_host[NR_NAME_MAX]; /* cmpview's server target */
+    int srv_port;               /* 0 when no server is selected */
+
     NotepadReq notepad;
     Buf notices;           /* events shown in the terminal after a command */
     int dirty;             /* state changed since the last save */
@@ -233,6 +243,12 @@ int game_new(Game *g, const char *world_path);
 int game_load(Game *g, const char *world_path, const char *save_path);
 int game_save(Game *g, const char *save_path);
 void game_destroy(Game *g);
+
+/* Apps: open and pinned state, and the context view. */
+void game_apps_reset(Game *g);
+int game_app_by_name(const char *name);
+void game_cmpview(Game *g, Buf *out);
+const char *service_banner(const char *service);
 
 /* Runs the rig's ~/.profile when a shell opens. */
 void game_login(Game *g, Buf *out);

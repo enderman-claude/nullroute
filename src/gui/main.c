@@ -25,7 +25,8 @@ typedef struct App {
     int game_active;
     Term term;
     Notepad np;
-    int focus;            /* 0 terminal, 1 notepad */
+    AppsView av;
+    int focus;            /* 0 terminal, 1 apps panel */
     int sel;              /* selected menu entry */
     int has_save;
     int quit;
@@ -148,6 +149,8 @@ static void start_new(App *a)
         return;
     }
     a->game_active = 1;
+    a->av.active = APP_CMPVIEW;
+    a->av.mail_sel = 0;
     a->intro_t = 0;
     a->scr = SCR_INTRO;
     a->focus = 0;
@@ -162,6 +165,8 @@ static void continue_game(App *a)
         return;
     }
     a->game_active = 1;
+    a->av.active = APP_CMPVIEW;
+    a->av.mail_sel = 0;
     a->focus = 0;
     a->scr = SCR_GAME;
     /* Show any events that were waiting, and the rig's profile. */
@@ -332,7 +337,7 @@ static Layout layout(void)
     l.term = (Rectangle){6, bar_h + 6, split - 12, H - bar_h - 12};
     float right_x = split + 6;
     float right_w = W - right_x - 6;
-    float map_h = (H - bar_h - 18) * 0.42f;
+    float map_h = (H - bar_h - 18) * 0.36f;
     l.map = (Rectangle){right_x, bar_h + 6, right_w, map_h};
     l.np = (Rectangle){right_x, bar_h + 12 + map_h, right_w, H - bar_h - 18 - map_h};
     return l;
@@ -389,13 +394,29 @@ static void update_game(App *a)
     if (g->notepad.pending) {
         np_open(&a->np, g, g->notepad.host, g->notepad.path);
         g->notepad.pending = 0;
-        a->focus = 1;
+    }
+    /* A command asked for an app: show its tab and focus the panel. */
+    if (g->app_focus) {
+        a->av.active = g->app_focus - 1;
+        /* Notepad and mail take the keyboard; cmpview only switches tab, so
+         * the terminal keeps typing. */
+        if (a->av.active != APP_CMPVIEW) {
+            a->focus = 1;
+        }
+        g->app_focus = 0;
     }
 
     if (term_update(&a->term, g, a->focus == 0)) {
         autosave(a, 0);
     }
-    np_update(&a->np, g, a->focus == 1);
+    if (apps_update(g, &a->np, &a->av, l.np, a->focus == 1)) {
+        /* Typing in a read-only app goes to the terminal. raylib's character
+         * queue only lasts this frame, so the terminal reads it now. */
+        a->focus = 0;
+        if (term_update(&a->term, g, 1)) {
+            autosave(a, 0);
+        }
+    }
 
     if (g->ending[0] != '\0') {
         /* The last choice has been made. The ending screen takes over. */
@@ -413,7 +434,7 @@ static void draw_game(App *a)
     draw_topbar(a, l.bar);
     term_draw(&a->term, l.term, a->focus == 0);
     netmap_draw(&a->g, l.map);
-    np_draw(&a->np, l.np, a->focus == 1);
+    apps_draw(&a->g, &a->np, &a->av, l.np, a->focus == 1);
 }
 
 /* ---------- pause ---------- */

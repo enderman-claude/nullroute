@@ -688,19 +688,18 @@ void np_draw(Notepad *n, Rectangle r, int focused)
     DrawRectangleLinesEx(r, 2, focused ? C_ACCENT : C_EDGE);
     float cw = gui_cell_width();
     float ch = gui_cell_height();
-    DrawTextEx(gui_font(), "NOTEPAD", (Vector2){r.x + 10, r.y + 6}, 16, 0, C_DIM);
-    DrawTextEx(gui_font(), "Ctrl+S save   F2 switch", (Vector2){r.x + r.width - 210, r.y + 6}, 14, 0, C_DIM);
+    DrawTextEx(gui_font(), "Ctrl+S save", (Vector2){r.x + r.width - 110, r.y + 6}, 14, 0, C_DIM);
     if (!n->open) {
         DrawTextEx(gui_font(), "No file open. Type  notepad FILE  in the terminal.",
-                   (Vector2){r.x + 10, r.y + 34}, FONT_SIZE, 0, C_DIM);
+                   (Vector2){r.x + 10, r.y + 10}, FONT_SIZE, 0, C_DIM);
         return;
     }
     char title[NR_PATH_MAX + 64];
     snprintf(title, sizeof title, "%s%s", n->path, n->dirty ? "  [modified]" : "");
-    DrawTextEx(gui_font(), title, (Vector2){r.x + 90, r.y + 6}, 16, 0, C_INFO);
+    DrawTextEx(gui_font(), title, (Vector2){r.x + 10, r.y + 6}, 16, 0, C_INFO);
 
     int cols = (int)((r.width - 20) / cw);
-    int rows = (int)((r.height - 60) / ch);
+    int rows = (int)((r.height - 50) / ch);
     if (cols < 4 || rows < 1) {
         return;
     }
@@ -733,7 +732,7 @@ void np_draw(Notepad *n, Rectangle r, int focused)
         pos = (size_t)(nl - n->text) + 1;
         line++;
     }
-    float y = r.y + 34;
+    float y = r.y + 26;
     for (int shown = 0; shown < rows && pos <= n->len; shown++) {
         char *nl = memchr(n->text + pos, '\n', n->len - pos);
         size_t end = nl ? (size_t)(nl - n->text) : n->len;
@@ -750,7 +749,7 @@ void np_draw(Notepad *n, Rectangle r, int focused)
         char num[16];
         snprintf(num, sizeof num, "%3d ", n->scroll + shown + 1);
         DrawTextEx(gui_font(), num, (Vector2){r.x + 6, y}, FONT_SIZE, 0, C_DIM);
-        DrawTextEx(gui_font(), tmp, (Vector2){r.x + 50, y}, FONT_SIZE, 0, C_TEXT);
+        hl_draw_line(lang_for_path(n->path), tmp, l, r.x + 50, y);
         if (n->scroll + shown == cur_line && focused && ((int)(GetTime() * 2) % 2) == 0) {
             DrawRectangle((int)(r.x + 50 + (float)cur_col * cw), (int)y, (int)cw, (int)ch - 2, C_PROMPT);
         }
@@ -760,7 +759,7 @@ void np_draw(Notepad *n, Rectangle r, int focused)
         }
         pos = end + 1;
     }
-    DrawTextEx(gui_font(), n->status, (Vector2){r.x + 10, r.y + r.height - 22}, 16, 0, C_DIM);
+    DrawTextEx(gui_font(), n->status, (Vector2){r.x + 10, r.y + r.height - 20}, 14, 0, C_DIM);
 }
 
 /* ---------- network map ---------- */
