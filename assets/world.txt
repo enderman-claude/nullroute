@@ -19,6 +19,39 @@ Rig notes
 - Downloads land in ~/loot. Mail arrives in ~/mail.
 @end
 
+@file rig /home/ghost/.profile
+# ~/.profile: runs every time a shell opens on the rig
+if [ "$isfirstrun" = 1 ] && [ "$tutorial" = 1 ]; then
+  sh /home/ghost/tutorial.sh
+fi
+echo "Type 'brief' for your next steps, or 'help' for commands."
+@end
+
+@file rig /home/ghost/tutorial.sh
+# First-run tutorial. Every line is a real command on this machine.
+echo "== NULLROUTE tutorial =="
+echo "You are on your rig, a machine of your own. The prompt shows"
+echo "user@machine:directory. Commands run on whichever machine you are on."
+echo ""
+echo "1. Look around. pwd shows where you are, ls lists the folder:"
+pwd
+ls -l
+echo ""
+echo "2. Read a file. cat prints it. Your notes are in your home folder:"
+cat ~/notes.txt
+echo ""
+echo "3. Find machines to attack. scan lists the hosts linked to this one:"
+scan
+echo ""
+echo "4. Break in. crack HOST USER finds a password from a wordlist."
+echo "   ssh USER@HOST logs in. scp HOST:FILE ~/loot/ copies a file back"
+echo "   to your rig. Run scp from the rig, so 'exit' first if you are remote."
+echo ""
+echo "5. Chapter 1 is ready. Type 'brief' for its steps."
+echo "   The notepad: notepad FILE opens a file. Ctrl+S saves it."
+echo "   Esc opens the pause menu. The game saves as you go."
+@end
+
 @host crumbco-pos
 name: Crumb & Co. POS
 ip: 203.0.113.14

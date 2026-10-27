@@ -164,10 +164,10 @@ static void continue_game(App *a)
     a->game_active = 1;
     a->focus = 0;
     a->scr = SCR_GAME;
-    /* Show any events that were waiting, and the prompt. */
+    /* Show any events that were waiting, and the rig's profile. */
     Buf out;
     buf_init(&out);
-    game_exec(&a->g, "", &out);
+    game_login(&a->g, &out);
     term_write(&a->term, out.data ? out.data : "", out.len);
     buf_free(&out);
 }
@@ -263,7 +263,7 @@ static void update_intro(App *a)
             a->scr = SCR_GAME;
             Buf out;
             buf_init(&out);
-            game_exec(&a->g, "", &out);
+            game_login(&a->g, &out);
             term_write(&a->term, out.data ? out.data : "", out.len);
             buf_free(&out);
         }

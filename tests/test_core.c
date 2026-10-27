@@ -638,6 +638,35 @@ TEST(save_and_load_round_trip)
     run_done(&r);
 }
 
+TEST(profile_runs_tutorial_once)
+{
+    Run r;
+    run_init(&r);
+    buf_init(&r.out);
+    game_login(&r.g, &r.out);
+    CHECK(strstr(r.out.data, "NULLROUTE tutorial") != NULL);
+    CHECK(strstr(r.out.data, "Type 'brief'") != NULL);
+    CHECK(r.g.first_run == 0);
+    buf_free(&r.out);
+    buf_init(&r.out);
+    game_login(&r.g, &r.out);
+    CHECK(strstr(r.out.data, "NULLROUTE tutorial") == NULL);
+    CHECK(strstr(r.out.data, "Type 'brief'") != NULL);
+    buf_free(&r.out);
+    char path[512];
+    snprintf(path, sizeof path, "%s", "/tmp/nullroute-test-firstrun.dat");
+    CHECK(game_save(&r.g, path) == 0);
+    Run s;
+    memset(&s, 0, sizeof s);
+    buf_init(&s.out);
+    CHECK(game_load(&s.g, world_path, path) == 0);
+    CHECK(s.g.first_run == 0);
+    buf_free(&s.out);
+    game_destroy(&s.g);
+    remove(path);
+    run_done(&r);
+}
+
 int main(int argc, char **argv)
 {
     world_path = argc > 1 ? argv[1] : "assets/world.txt";
@@ -664,6 +693,7 @@ int main(int argc, char **argv)
     run_trace_drops_connection();
     run_full_playthrough_reaches_the_ending();
     run_scp_only_runs_from_the_rig();
+    run_profile_runs_tutorial_once();
     run_save_and_load_round_trip();
 
     printf("\n%d tests, %d failed\n", tests_run, tests_failed);

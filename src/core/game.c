@@ -68,6 +68,8 @@ Session *session_new_rig(Game *g)
     Session *s = session_alloc(g->rig, NR_PLAYER, 0);
     snprintf(s->cwd, sizeof s->cwd, "/home/%s", NR_PLAYER);
     session_init_env(s);
+    session_setvar(s, "isfirstrun", g->first_run ? "1" : "0");
+    session_setvar(s, "tutorial", "1");
     return s;
 }
 
@@ -308,6 +310,34 @@ void game_exec(Game *g, const char *line, Buf *out)
     }
 }
 
+/* Runs ~/.profile on the rig. The first time, isfirstrun is 1 and the
+ * profile starts the tutorial. */
+void game_login(Game *g, Buf *out)
+{
+    Ctx c;
+    memset(&c, 0, sizeof c);
+    c.g = g;
+    c.s = g->top;
+    c.out = out;
+    c.err = out;
+    session_setvar(c.s, "isfirstrun", g->first_run ? "1" : "0");
+    shell_run(&c, "sh /home/ghost/.profile");
+    if (g->first_run) {
+        g->first_run = 0;
+        session_setvar(c.s, "isfirstrun", "0");
+        g->dirty = 1;
+    }
+    if (g->notices.len > 0) {
+        buf_put(out, g->notices.data, g->notices.len);
+        buf_free(&g->notices);
+    }
+    game_check_mission(g, out);
+    if (g->notices.len > 0) {
+        buf_put(out, g->notices.data, g->notices.len);
+        buf_free(&g->notices);
+    }
+}
+
 /* ---------- save and load ---------- */
 
 int game_save(Game *g, const char *save_path)
@@ -317,6 +347,7 @@ int game_save(Game *g, const char *save_path)
     buf_fmt(&b, "%s\n", SAVE_HEADER);
     buf_fmt(&b, "mission %d\n", g->mission);
     buf_fmt(&b, "won %d\n", g->won);
+    buf_fmt(&b, "firstrun %d\n", g->first_run);
     buf_fmt(&b, "ending %s\n", g->ending);
     for (int i = 0; i < g->nhosts; i++) {
         Host *h = &g->hosts[i];
@@ -404,6 +435,8 @@ int game_load(Game *g, const char *world_path, const char *save_path)
             g->mission = atoi(line + 8);
         } else if (strncmp(line, "won ", 4) == 0) {
             g->won = atoi(line + 4);
+        } else if (strncmp(line, "firstrun ", 9) == 0) {
+            g->first_run = atoi(line + 9);
         } else if (strncmp(line, "ending ", 7) == 0) {
             snprintf(g->ending, sizeof g->ending, "%s", line + 7);
         } else if (strncmp(line, "host ", 5) == 0) {
@@ -452,7 +485,6 @@ int game_load(Game *g, const char *world_path, const char *save_path)
     if (!ok) {
         return -1;
     }
-    /* Reinstall the system binaries in case the save predates them. */
     g->top = session_new_rig(g);
     g->dirty = 0;
     return 0;
@@ -469,6 +501,7 @@ int game_new(Game *g, const char *world_path)
     }
     g->mission = 1;
     g->won = 0;
+    g->first_run = 1;
     g->ending[0] = '\0';
     g->top = session_new_rig(g);
     deliver_mail(g, 1);

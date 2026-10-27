@@ -221,6 +221,7 @@ struct Game {
 
     Cred creds[NR_MAX_CREDS];
     int ncreds;
+    int first_run;         /* 1 until the rig's profile has run once */
 
     NotepadReq notepad;
     Buf notices;           /* events shown in the terminal after a command */
@@ -232,6 +233,9 @@ int game_new(Game *g, const char *world_path);
 int game_load(Game *g, const char *world_path, const char *save_path);
 int game_save(Game *g, const char *save_path);
 void game_destroy(Game *g);
+
+/* Runs the rig's ~/.profile when a shell opens. */
+void game_login(Game *g, Buf *out);
 
 /* Terminal interface. */
 void game_prompt(Game *g, Buf *out);
